@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Around the World in 80 Days</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a1520;color:#f5e6c8;font-family:Georgia,'Times New Roman',serif;overflow-x:hidden}
+button{font-family:inherit;cursor:pointer;transition:filter 0.15s,transform 0.1s}
+button:hover:not(:disabled){filter:brightness(1.15)}
+button:active:not(:disabled){transform:scale(0.97)}
+button:disabled{opacity:0.4;cursor:not-allowed}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:rgba(196,154,108,0.2);border-radius:2px}
+@keyframes reelBlur{0%,100%{filter:blur(0)}50%{filter:blur(1px)}}
+@keyframes celebPulse{0%{transform:scale(0.8);opacity:0}50%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+@keyframes coordFlash{0%{opacity:0;transform:translateY(4px)}100%{opacity:1;transform:translateY(0)}}
+.coord-flash{animation:coordFlash 0.4s ease-out}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const API = '';  // Same origin — no prefix needed
+
+// ═══════════════════════════════════════════════════════════
+// SOUND ENGINE — Asymmetric audio design via Tone.js
+// Wins get celebratory tones. Losses get SILENCE. 
+// This asymmetry is one of the most powerful subconscious
+// manipulators in slot design.
+// ═══════════════════════════════════════════════════════════
+let synthsReady = false, synth, bellSynth, noiseSynth;
+
+function initAudio() {
+  if (synthsReady) return;
+  try {
+    synth = new Tone.PolySynth(Tone.Synth, {
+      oscillator: { type: "triangle" },
+      envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.3 },
+      volume: -18,
+    }).toDestination();
+    bellSynth = new Tone.PolySynth(Tone.Synth, {
+      oscillator: { type: "sine" },
+      envelope: { attack: 0.005, decay: 0.4, sustain: 0, release: 0.5 },
+      volume: -20,
+    }).toDestination();
+    noiseSynth = new Tone.NoiseSynth({
+      noise: { type: "pink" },
+      envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.02 },
+      volume: -30,
+    }).toDestination();
+    synthsReady = true;
+  } catch(e) { console.warn("Audio init failed:", e); }
+}
+
+function playReelStop(reelIndex) {
+  if (!synthsReady) return;
+  try {
+    const notes = ["C3", "D3", "E3", "F3"];
+    bellSynth.triggerAttackRelease(notes[reelIndex], "16n", Tone.now(), 0.3);
+    noiseSynth.triggerAttackRelease("32n");
+  } catch(e) {}
+}
+
+function playWinSound(ratio) {
+  if (!synthsReady || ratio <= 0) return;
+  try {
+    const n = Tone.now();
+    if (ratio >= 20) {
+      // MEGA — full arpeggio + octave
+      synth.triggerAttackRelease("C4", "8n", n, 0.5);
+      synth.triggerAttackRelease("E4", "8n", n + 0.1, 0.5);
+      synth.triggerAttackRelease("G4", "8n", n + 0.2, 0.5);
+      synth.triggerAttackRelease("C5", "4n", n + 0.3, 0.6);
+      bellSynth.triggerAttackRelease("C6", "2n", n + 0.4, 0.3);
+    } else if (ratio >= 5) {
+      // BIG — major chord
+      synth.triggerAttackRelease("C4", "8n", n, 0.4);
+      synth.triggerAttackRelease("E4", "8n", n + 0.08, 0.4);
+      synth.triggerAttackRelease("G4", "8n", n + 0.16, 0.4);
+      bellSynth.triggerAttackRelease("C5", "4n", n + 0.24, 0.3);
+    } else if (ratio >= 1) {
+      // True win — ascending dyad
+      synth.triggerAttackRelease("E4", "16n", n, 0.3);
+      synth.triggerAttackRelease("G4", "16n", n + 0.08, 0.3);
+    } else {
+      // LDW — muted single note (still "sounds like a win")
+      synth.triggerAttackRelease("C4", "16n", n, 0.15);
+    }
+  } catch(e) {}
+}
+
+function playBonusFanfare() {
+  if (!synthsReady) return;
+  try {
+    const n = Tone.now();
+    bellSynth.triggerAttackRelease("G5", "8n", n, 0.4);
+    bellSynth.triggerAttackRelease("B5", "8n", n + 0.15, 0.4);
+    bellSynth.triggerAttackRelease("D6", "4n", n + 0.3, 0.5);
+  } catch(e) {}
+}
+
+function playGambleWin() {
+  if (!synthsReady) return;
+  try {
+    const n = Tone.now();
+    synth.triggerAttackRelease("C5", "8n", n, 0.4);
+    synth.triggerAttackRelease("E5", "8n", n + 0.1, 0.4);
+    synth.triggerAttackRelease("G5", "4n", n + 0.2, 0.5);
+  } catch(e) {}
+}
+
+function playGambleLoss() {
+  if (!synthsReady) return;
+  try { synth.triggerAttackRelease("C3", "4n", Tone.now(), 0.5); } catch(e) {}
+}
+
+// Losses: SILENCE. This IS the sound design. Nothing to hear.
+
+function App() {
+  const [sid, setSid] = React.useState(null);
+  const [st, setSt] = React.useState(null);  // GameState from server
+  const [grid, setGrid] = React.useState(null);
+  const [wins, setWins] = React.useState([]);
+  const [totalWin, setTotalWin] = React.useState(0);
+  const [msg, setMsg] = React.useState("Awaiting departure...");
+  const [spinning, setSpinning] = React.useState(false);
+  const [dispGrid, setDispGrid] = React.useState(null);
+  const [spinCoords, setSpinCoords] = React.useState(null);
+  const [bonusHit, setBonusHit] = React.useState(null);
+  const [nearMiss, setNearMiss] = React.useState(null);
+  const [outcome, setOutcome] = React.useState(null);
+  const [celebLevel, setCelebLevel] = React.useState(0);
+  const [showCeleb, setShowCeleb] = React.useState(false);
+  const [celebMsg, setCelebMsg] = React.useState("");
+  const [corr, setCorr] = React.useState(null);
+  const [bonusActive, setBonusActive] = React.useState(false);
+  const [bonusGambling, setBonusGambling] = React.useState(false);
+  const [bonusResult, setBonusResult] = React.useState(null);
+  const [autoPlay, setAutoPlay] = React.useState(false);
+  const [tab, setTab] = React.useState("game");
+  const [elapsed, setElapsed] = React.useState(0);
+  const [startTime] = React.useState(Date.now());
+
+  // Dark pattern toggles (client-side display only)
+  const [ldwOn, setLdwOn] = React.useState(true);
+  const [celebOn, setCelebOn] = React.useState(true);
+  const [creditOn, setCreditOn] = React.useState(false);
+  const [hideTime, setHideTime] = React.useState(false);
+  const [hideCost, setHideCost] = React.useState(true);
+  const [jpOn, setJpOn] = React.useState(true);
+  const [fallacyOn, setFallacyOn] = React.useState(true);
+  const [soundOn, setSoundOn] = React.useState(True);
+
+  const autoRef = React.useRef(false);
+  const tmRef = React.useRef(null);
+  React.useEffect(() => { autoRef.current = autoPlay; }, [autoPlay]);
+  React.useEffect(() => () => { if (tmRef.current) clearTimeout(tmRef.current); }, []);
+  React.useEffect(() => { const t = setInterval(() => setElapsed(Date.now() - startTime), 1000); return () => clearInterval(t); }, [startTime]);
+
+  // Create session on mount
+  React.useEffect(() => {
+    fetch(API + '/api/session', { method: 'POST' })
+      .then(r => r.json())
+      .then(d => { setSid(d.session_id); setSt(d.state); setMsg("Chart your course, spin the globe"); })
+      .catch(() => setMsg("Failed to connect to engine!"));
+  }, []);
+
+  const fmtT = ms => { const s=Math.floor(ms/1000),m=Math.floor(s/60),h=Math.floor(m/60); return `${h}:${String(m%60).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`; };
+  const fv = (a, c) => c ? `${Math.round(a*100).toLocaleString()} CR` : `£${a.toFixed(2)}`;
+  const fCoord = (v, ns) => `${Math.abs(v).toFixed(2)}°${v>=0?ns[0]:ns[1]}`;
+
+  const ANIM_SYMS = [
+    {emoji:"🏜️",name:"Sahara"},{emoji:"🌊",name:"Pacific"},{emoji:"❄️",name:"Siberia"},
+    {emoji:"🏖️",name:"Copa"},{emoji:"🏰",name:"Castle"},{emoji:"🌳",name:"Amazon"},
+    {emoji:"🗽",name:"Liberty"},{emoji:"⛩️",name:"Fushimi"},{emoji:"🕌",name:"Taj"},
+    {emoji:"🔺",name:"Giza"},{emoji:"🗼",name:"Eiffel"},{emoji:"🏛️",name:"Kremlin"},
+    {emoji:"🌍",name:"WILD"},{emoji:"✈️",name:"FLIGHT"},
+  ];
+
+  // ── SPIN ──
+  async function doSpin(isAuto = false) {
+    if (spinning || !sid || bonusActive) return;
+    // Init audio on first user interaction (browser requires gesture)
+    if (soundOn && !synthsReady) { await Tone.start(); initAudio(); }
+    setSpinning(true); setWins([]); setTotalWin(0); setShowCeleb(false);
+    setBonusHit(null); setNearMiss(null); setOutcome(null); setBonusResult(null);
+
+    // Start reel animation
+    const REELS = 4, ROWS = 5;
+    const baseMax = isAuto ? 5 : 8;
+    const intv = isAuto ? 50 : 65;
+    let cycles = 0;
+    const reelStop = Array.from({length:REELS}, (_,r) => baseMax - (REELS-1-r)*2 + Math.floor(Math.random()*2));
+    const maxCyc = Math.max(...reelStop) + 2;
+
+    // Fire API call in parallel with animation
+    const spinPromise = fetch(API + '/api/spin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sid, is_auto: isAuto }),
+    }).then(r => r.json());
+
+    let result = null;
+
+    const animTimer = setInterval(() => {
+      cycles++;
+      // Play reel stop sounds as each reel locks in
+      if (soundOn && synthsReady) {
+        for (let r = 0; r < REELS; r++) {
+          if (cycles === reelStop[r]) playReelStop(r);
+        }
+      }
+      const ag = Array.from({length:REELS}, (_,r) => {
+        if (cycles >= reelStop[r] && result) return result.grid[r];
+        return Array.from({length:ROWS}, () => ANIM_SYMS[Math.floor(Math.random()*ANIM_SYMS.length)]);
+      });
+      setDispGrid(ag);
+
+      if (cycles >= maxCyc && result) {
+        clearInterval(animTimer);
+        finishDisplay(result);
+      }
+    }, intv);
+
+    // Wait for API response
+    try {
+      result = await spinPromise;
+      if (!result.ok && result.error) {
+        clearInterval(animTimer);
+        setSpinning(false);
+        setMsg(result.error);
+        setDispGrid(null);
+        return;
+      }
+    } catch(e) {
+      clearInterval(animTimer);
+      setSpinning(false);
+      setMsg("Connection lost!");
+      setDispGrid(null);
+      return;
+    }
+
+    // If animation already finished, apply immediately
+    if (cycles >= maxCyc) {
+      clearInterval(animTimer);
+      finishDisplay(result);
+    }
+  }
+
+  function finishDisplay(r) {
+    setDispGrid(null);
+    setGrid(r.grid);
+    setWins(r.wins);
+    setTotalWin(r.total_win);
+    setSt(r.state);
+    setCorr(r.correction);
+    setSpinCoords({ lat: r.spin_lat, lon: r.spin_lon });
+    setBonusHit(r.bonus_hit);
+    setNearMiss(r.near_miss);
+    setOutcome(r.outcome);
+    setCelebLevel(r.celeb_level);
+
+    // Celebration
+    if (r.celeb_level > 0 && celebOn) {
+      setShowCeleb(true);
+      setCelebMsg(
+        r.celeb_level >= 5 ? "🌍 WORLD WONDER! 🌍" :
+        r.celeb_level >= 4 ? "⭐ LANDMARK! ⭐" :
+        r.celeb_level >= 3 ? "Great Discovery!" :
+        `+${fv(r.total_win, creditOn)}`
+      );
+      setTimeout(() => setShowCeleb(false), r.celeb_level >= 4 ? 2500 : 1000);
+    }
+
+    // Sound — wins get music, losses get SILENCE (asymmetric audio)
+    if (soundOn && synthsReady) {
+      if (r.total_win > 0) playWinSound(r.total_win / r.state.bet);
+      if (r.bonus_triggered) setTimeout(() => playBonusFanfare(), 300);
+    }
+
+    // Message
+    if (r.bonus_triggered) {
+      setBonusActive(true);
+      setMsg("✈️ BONUS TRIGGERED!");
+    } else if (r.state.free_spins_left > 0) {
+      setMsg(`Free voyage — ${r.state.free_spins_left} left`);
+    } else if (r.state.free_spins_left === 0 && r.state.free_spins_won > 0) {
+      setMsg(`Journey complete! Won ${fv(r.state.free_spins_won, creditOn)}`);
+    } else if (r.total_win > 0) {
+      if (!ldwOn && r.outcome === "LDW") {
+        setMsg(`${fv(r.total_win, creditOn)} (NET: -${fv(r.state.bet - r.total_win, false)})`);
+      } else {
+        setMsg(`WIN ${fv(r.total_win, creditOn)}${r.multiplier > 1 ? ` ×${r.multiplier}` : ''}`);
+      }
+    } else {
+      if (celebOn) setMsg(""); else setMsg(`Lost ${fv(r.state.bet, creditOn)}`);
+    }
+
+    setSpinning(false);
+
+    // Autoplay
+    if (autoRef.current && !r.bonus_triggered && r.state.balance >= r.state.bet) {
+      tmRef.current = setTimeout(() => { if (autoRef.current) doSpin(true); }, 500);
+    } else if (autoRef.current) {
+      setAutoPlay(false);
+    }
+  }
+
+  // ── BONUS ACTIONS ──
+  async function handleBonusCollect() {
+    const r = await fetch(API + '/api/bonus/collect', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ session_id: sid }),
+    }).then(r => r.json());
+    setSt(r.state);
+    setBonusActive(false);
+    setMsg(r.message);
+  }
+
+  async function handleBonusGamble() {
+    setBonusGambling(true);
+    const r = await fetch(API + '/api/bonus/gamble', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ session_id: sid }),
+    }).then(r => r.json());
+
+    setTimeout(() => {
+      setSt(r.state);
+      setBonusResult(r.success ? "win" : "lose");
+      setBonusGambling(false);
+      setMsg(r.message);
+      // Sound — celebrate safe landing or mourn the crash
+      if (soundOn && synthsReady) {
+        if (r.success) playGambleWin(); else playGambleLoss();
+      }
+      if (!r.success || r.spins_awarded > 0) {
+        setTimeout(() => { setBonusActive(false); setBonusResult(null); }, 2000);
+      }
+    }, 1200);
+  }
+
+  async function changeBet(b) {
+    if (!sid || spinning) return;
+    await fetch(API + '/api/bet', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ session_id: sid, bet: b }),
+    }).then(r => r.json()).then(s => setSt(s));
+  }
+
+  async function resetSession() {
+    if (!sid) return;
+    await fetch(API + '/api/reset', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ session_id: sid }),
+    }).then(r => r.json()).then(s => { setSt(s); setMsg("Chart your course, spin the globe"); setGrid(null); setWins([]); setTotalWin(0); setSpinCoords(null); });
+  }
+
+  if (!st) return React.createElement('div', {style:{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',color:'#c49a6c',fontSize:'1rem',fontStyle:'italic'}}, msg || "Connecting to engine...");
+
+  const dg = dispGrid || grid;
+  const hl = new Set();
+  if (wins) wins.forEach(w => w.positions.forEach(p => hl.add(`${p[0]}-${p[1]}`)));
+  const C = {bg:"#0a1520",card:"#0d1e2d",brass:"#c49a6c",gold:"#d4a574",cream:"#f5e6c8",sea:"#1a3a52",win:"#4ecdc4",lose:"#e74c3c"};
+  const dpCount = [ldwOn,celebOn,creditOn,hideTime,hideCost,jpOn,fallacyOn,soundOn].filter(Boolean).length;
+  const tabS = t => ({flex:1,padding:"6px 2px",fontSize:"0.5rem",fontWeight:tab===t?"bold":"normal",background:tab===t?`${C.brass}15`:"transparent",border:tab===t?`1px solid ${C.brass}44`:`1px solid ${C.brass}15`,borderBottom:tab===t?"none":undefined,color:tab===t?C.brass:"#556",cursor:"pointer",borderRadius:"4px 4px 0 0"});
+
+  // Fallacy (computed client-side from server state for display)
+  const heat = st.consecutive_wins > 2 ? {level:"🔥 HOT ZONE",color:"#d4443c"} : st.consecutive_losses > 5 ? {level:"❄️ DOLDRUMS",color:"#4488cc"} : {level:"⚡ FAIR WINDS",color:C.brass};
+  const bonusMeter = Math.min(95, ((st.spin_count - (st.bonus_trips > 0 ? st.spin_count : 0)) / 150 * 100));
+
+  return React.createElement('div', {style:{minHeight:"100vh",background:`linear-gradient(170deg, ${C.bg}, #0f2233 40%, ${C.bg})`,display:"flex",flexDirection:"column",alignItems:"center",padding:"8px",gap:"5px"}},
+
+    // Header
+    React.createElement('div', {style:{textAlign:"center"}},
+      React.createElement('div', {style:{fontSize:"0.5rem",letterSpacing:"6px",color:C.brass,opacity:0.5}}, "⸻ PHILEAS FOGG'S ⸻"),
+      React.createElement('h1', {style:{fontSize:"1.3rem",fontWeight:"normal",margin:"2px 0",letterSpacing:"3px",color:C.cream,fontStyle:"italic",textShadow:`0 0 30px ${C.brass}33`}}, "Around the World in 80 Days"),
+      React.createElement('div', {style:{fontSize:"0.42rem",color:"#556677",letterSpacing:"2px",fontFamily:"'Courier New',monospace"}}, `${dpCount}/8 MECHANISMS │ 8 PAYLINES │ 4×5 GRID │ 96.5% RTP`)
+    ),
+
+    // Jackpot
+    jpOn && React.createElement('div', {style:{width:"100%",maxWidth:580,background:`linear-gradient(90deg, ${C.sea}44, ${C.brass}15, ${C.sea}44)`,border:`1px solid ${C.brass}33`,borderRadius:6,padding:"3px 10px",textAlign:"center"}},
+      React.createElement('div', {style:{fontSize:"0.4rem",color:C.brass,letterSpacing:"3px",opacity:0.6}}, "★ CIRCUMNAVIGATION PRIZE ★"),
+      React.createElement('div', {style:{fontSize:"1rem",fontWeight:"bold",color:C.gold}}, fv(st.jackpot_pool, creditOn))
+    ),
+
+    // Fallacy
+    fallacyOn && React.createElement('div', {style:{display:"flex",gap:4,width:"100%",maxWidth:580}},
+      React.createElement('div', {style:{flex:1,background:C.card,borderRadius:4,padding:"3px 6px",fontSize:"0.45rem",border:`1px solid ${C.brass}15`}},
+        React.createElement('div', {style:{color:heat.color,fontWeight:"bold"}}, heat.level)
+      ),
+      React.createElement('div', {style:{flex:1.3,background:C.card,borderRadius:4,padding:"3px 6px",fontSize:"0.42rem",color:"#778",display:"flex",alignItems:"center",border:`1px solid ${C.brass}15`}},
+        st.consecutive_wins > 2 ? `${st.consecutive_wins} discoveries!` : st.consecutive_losses > 4 ? `${st.consecutive_losses} empty seas...` : "Scanning horizon..."
+      )
+    ),
+
+    // Timer
+    !hideTime && React.createElement('div', {style:{fontSize:"0.45rem",color:"#556",fontFamily:"'Courier New',monospace"}}, `⏱ ${fmtT(elapsed)} │ ${st.spin_count} voyages │ Net: `, React.createElement('span', {style:{color:st.total_won-st.total_wagered>=0?C.win:C.lose}}, fv(st.total_won-st.total_wagered,false))),
+
+    // Balance
+    React.createElement('div', {style:{display:"flex",justifyContent:"space-between",width:"100%",maxWidth:580,background:C.card,border:`1px solid ${C.brass}20`,borderRadius:6,padding:"5px 14px",fontSize:"0.7rem"}},
+      React.createElement('div', {}, React.createElement('span', {style:{color:"#556",fontSize:"0.42rem",fontFamily:"monospace"}}, "TREASURY"), React.createElement('br'), React.createElement('span', {style:{color:C.gold,fontWeight:"bold"}}, fv(st.balance, creditOn))),
+      React.createElement('div', {style:{textAlign:"center"}}, React.createElement('span', {style:{color:"#556",fontSize:"0.42rem",fontFamily:"monospace"}}, hideCost?"PER LINE":"WAGER"), React.createElement('br'), React.createElement('span', {style:{color:"#e8a87c",fontWeight:"bold"}}, hideCost?fv(st.bet/8,creditOn):fv(st.bet,creditOn))),
+      React.createElement('div', {style:{textAlign:"center"}}, React.createElement('span', {style:{color:"#556",fontSize:"0.42rem",fontFamily:"monospace"}}, "RETURN"), React.createElement('br'), React.createElement('span', {style:{fontWeight:"bold",color:st.rtp>95&&st.rtp<98?C.win:"#e8a87c"}}, st.rtp > 0 ? st.rtp.toFixed(2)+"%" : "—")),
+      React.createElement('div', {style:{textAlign:"right"}}, React.createElement('span', {style:{color:"#556",fontSize:"0.42rem",fontFamily:"monospace"}}, "PRIZE"), React.createElement('br'), React.createElement('span', {style:{color:totalWin>0?C.win:"#445",fontWeight:"bold"}}, fv(totalWin, creditOn)))
+    ),
+
+    // Free spins
+    st.free_spins_left > 0 && React.createElement('div', {style:{background:"linear-gradient(90deg, #1a3355, #224466, #1a3355)",color:"#fff",padding:"3px 12px",borderRadius:6,fontSize:"0.65rem",fontWeight:"bold",textAlign:"center",width:"100%",maxWidth:580}}, `✈️ FREE VOYAGE: ${st.free_spins_left} │ Won: ${fv(st.free_spins_won,creditOn)}`),
+
+    // Celebration overlay
+    showCeleb && celebLevel >= 3 && React.createElement('div', {style:{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,pointerEvents:"none",animation:"celebPulse 0.5s ease-out"}},
+      React.createElement('div', {style:{fontSize:celebLevel>=5?"1.6rem":"1.1rem",fontWeight:"bold",color:C.gold,textShadow:`0 0 30px ${C.brass}`,fontStyle:"italic"}}, celebMsg)
+    ),
+
+    // ══ BONUS PANEL ══
+    bonusActive && st.bonus_active && React.createElement('div', {style:{width:"100%",maxWidth:580,background:`linear-gradient(180deg, #0d2233, ${C.card})`,border:`2px solid ${C.brass}55`,borderRadius:10,padding:14}},
+      React.createElement('div', {style:{textAlign:"center",fontWeight:"bold",color:C.gold,fontSize:"0.8rem",marginBottom:10,fontStyle:"italic"}}, "✈️ Around the World in 80 Days ✈️"),
+      // Route
+      React.createElement('div', {style:{display:"flex",gap:3,marginBottom:10,overflowX:"auto",paddingBottom:4}},
+        ...(st.route || []).map((s, i) => React.createElement('div', {key:i,style:{flex:"0 0 auto",width:54,textAlign:"center",padding:"4px 2px",borderRadius:6,background:i<st.bonus_stop?`${C.win}15`:i===st.bonus_stop?`${C.brass}20`:`${C.brass}08`,border:i===st.bonus_stop?`2px solid ${C.brass}`:i<st.bonus_stop?`1px solid ${C.win}44`:`1px solid ${C.brass}15`,opacity:i>st.bonus_stop+1?0.35:1}},
+          React.createElement('div', {style:{fontSize:"1.1rem"}}, s.emoji),
+          React.createElement('div', {style:{fontSize:"0.38rem",color:i===st.bonus_stop?C.gold:"#668"}}, s.city),
+          React.createElement('div', {style:{fontSize:"0.45rem",color:C.win,fontWeight:"bold"}}, `+${s.spins}`),
+          i>0 && i<(st.route||[]).length-1 && React.createElement('div', {style:{fontSize:"0.35rem",color:"#e8a87c"}}, Math.round(s.chance*100)+"%")
+        ))
+      ),
+      React.createElement('div', {style:{textAlign:"center",marginBottom:8}},
+        React.createElement('div', {style:{fontSize:"1.1rem",fontWeight:"bold",color:C.win}}, `${st.bonus_spins} FREE SPINS`)
+      ),
+      bonusResult === "win" && React.createElement('div', {style:{textAlign:"center",color:C.win,fontWeight:"bold",marginBottom:6}}, "✅ SAFE LANDING!"),
+      bonusResult === "lose" && React.createElement('div', {style:{textAlign:"center",color:C.lose,fontWeight:"bold",marginBottom:6}}, "💥 SHIPWRECKED!"),
+      !bonusGambling && bonusResult !== "lose" && st.bonus_stop < (st.route||[]).length-1 && React.createElement('div', {style:{display:"flex",gap:8}},
+        React.createElement('button', {onClick:handleBonusCollect,style:{flex:1,padding:"10px",borderRadius:6,border:`2px solid ${C.win}`,background:`${C.win}12`,color:C.win,fontWeight:"bold",fontSize:"0.7rem"}}, `COLLECT ${st.bonus_spins} SPINS`),
+        React.createElement('button', {onClick:handleBonusGamble,style:{flex:1,padding:"10px",borderRadius:6,border:"2px solid #e8a87c",background:"rgba(232,168,124,0.08)",color:"#e8a87c",fontWeight:"bold",fontSize:"0.7rem"}}, `GAMBLE → ${(st.route||[])[st.bonus_stop+1]?.city || ''} (${Math.round(((st.route||[])[st.bonus_stop+1]?.chance||0)*100)}%)`)
+      ),
+      bonusGambling && React.createElement('div', {style:{textAlign:"center",color:C.gold,fontWeight:"bold",padding:10,fontStyle:"italic"}}, "✈️ Sailing... 🎲")
+    ),
+
+    // ══ REEL GRID ══
+    React.createElement('div', {style:{background:`linear-gradient(180deg, ${C.sea}88, ${C.card})`,border:`2px solid ${C.brass}33`,borderRadius:10,padding:8,width:"100%",maxWidth:580,boxShadow:`inset 0 0 40px rgba(0,0,0,0.4)`}},
+      showCeleb && celebLevel > 0 && celebLevel < 3 && React.createElement('div', {style:{textAlign:"center",color:C.gold,fontWeight:"bold",fontSize:"0.65rem",marginBottom:3,fontStyle:"italic"}}, celebMsg),
+      dg && React.createElement('div', {style:{display:"grid",gridTemplateColumns:"repeat(4, 1fr)",gap:3}},
+        ...Array.from({length:5}).flatMap((_,row) =>
+          Array.from({length:4}).map((_,reel) => {
+            const sym = dg?.[reel]?.[row] || {emoji:"❓",name:"?"};
+            const isW = hl.has(`${reel}-${row}`);
+            return React.createElement('div', {key:`${reel}-${row}`,style:{background:isW?`radial-gradient(circle, ${C.win}18, ${C.win}04)`:`linear-gradient(180deg, rgba(13,30,45,0.8), rgba(10,21,32,0.9))`,border:isW?`2px solid ${C.win}`:`1px solid ${C.brass}18`,borderRadius:6,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:52,boxShadow:isW?`0 0 12px ${C.win}33`:"none"}},
+              React.createElement('div', {style:{fontSize:"1.3rem",lineHeight:1}}, sym.emoji),
+              React.createElement('div', {style:{fontSize:"0.35rem",color:`${C.brass}88`,marginTop:1,fontFamily:"monospace"}}, sym.name)
+            );
+          })
+        )
+      ),
+      spinCoords && React.createElement('div', {className:"coord-flash",style:{display:"flex",justifyContent:"center",gap:12,marginTop:6,padding:"4px 8px",background:`${C.brass}08`,borderRadius:4,border:`1px solid ${C.brass}15`}},
+        React.createElement('div', {style:{fontSize:"0.5rem",fontFamily:"monospace",color:C.brass}}, `📍 ${fCoord(spinCoords.lat,"NS")} ${fCoord(spinCoords.lon,"EW")}`),
+        bonusHit && React.createElement('div', {style:{fontSize:"0.5rem",color:C.win,fontWeight:"bold"}}, `✈️ ${bonusHit.name}! (${bonusHit.dist.toFixed(0)}km)`),
+        !bonusHit && nearMiss && React.createElement('div', {style:{fontSize:"0.45rem",color:"#e8a87c"}}, `👁 ${nearMiss.emoji} ${nearMiss.name} ${nearMiss.dist.toFixed(0)}km away`)
+      )
+    ),
+
+    // Message
+    React.createElement('div', {style:{fontSize:"0.7rem",fontWeight:"bold",textAlign:"center",minHeight:18,color:totalWin>0?C.win:msg.includes("✈️")?C.gold:"#667788",fontStyle:"italic"}},
+      msg,
+      !ldwOn && outcome === "LDW" && totalWin > 0 && React.createElement('span', {style:{color:"#e8a87c",fontSize:"0.5rem",marginLeft:6}}, `⚠ LDW: net -${fv(st.bet - totalWin, false)}`)
+    ),
+
+    // Bet buttons
+    React.createElement('div', {style:{display:"flex",gap:3,width:"100%",maxWidth:580}},
+      ...[0.20,0.50,1,2,5,10].map(b => React.createElement('button', {key:b,onClick:()=>changeBet(b),disabled:spinning||bonusActive,style:{flex:1,background:st.bet===b?`${C.brass}20`:"transparent",border:st.bet===b?`1px solid ${C.brass}55`:`1px solid ${C.brass}15`,color:st.bet===b?C.gold:"#556",borderRadius:4,padding:"3px 2px",fontSize:"0.52rem"}}, hideCost?fv(b/8,creditOn):fv(b,creditOn)))
+    ),
+
+    // Spin + auto
+    React.createElement('div', {style:{display:"flex",gap:4,width:"100%",maxWidth:580}},
+      React.createElement('button', {onClick:()=>doSpin(false),disabled:spinning||bonusActive||(st.free_spins_left===0&&st.balance<st.bet),style:{flex:2,background:spinning?"rgba(50,50,60,0.3)":st.free_spins_left>0?`linear-gradient(180deg, ${C.sea}, #0d1e2d)`:`linear-gradient(180deg, ${C.brass}, #8b6914)`,border:"none",borderRadius:6,padding:"11px",fontSize:"0.9rem",fontWeight:"bold",color:spinning?"#445":"#0a1520",letterSpacing:"2px",fontStyle:"italic"}}, spinning ? "..." : st.free_spins_left > 0 ? `✈️ FREE (${st.free_spins_left})` : "🌍 Spin the Globe"),
+      React.createElement('button', {onClick:()=>{setAutoPlay(!autoPlay);if(autoPlay)autoRef.current=false;},disabled:bonusActive,style:{flex:0.5,background:autoPlay?`${C.lose}12`:"transparent",border:autoPlay?`1px solid ${C.lose}`:`1px solid ${C.brass}15`,borderRadius:6,padding:"11px 2px",fontSize:"0.45rem",color:autoPlay?C.lose:"#556"}}, autoPlay ? "■" : "▶")
+    ),
+
+    // Reset
+    React.createElement('div', {style:{display:"flex",gap:3,width:"100%",maxWidth:580}},
+      React.createElement('button', {onClick:resetSession,style:{padding:"3px 8px",borderRadius:3,background:`${C.lose}08`,border:`1px solid ${C.lose}20`,color:C.lose,fontSize:"0.48rem"}}, "↺ RESET")
+    ),
+
+    // Tabs
+    React.createElement('div', {style:{display:"flex",width:"100%",maxWidth:580,gap:1}},
+      ...["game","bonus","dark","engine"].map(t => React.createElement('button', {key:t,onClick:()=>setTab(t),style:tabS(t)}, {game:"🌍 LOG",bonus:"✈️ ROUTE",dark:"🧠 DARK",engine:"⚙️ ENGINE"}[t]))
+    ),
+
+    // Tab content
+    React.createElement('div', {style:{width:"100%",maxWidth:580,background:C.card,border:`1px solid ${C.brass}10`,borderTop:"none",borderRadius:"0 0 6px 6px",padding:10,fontSize:"0.55rem",lineHeight:1.5,minHeight:120,fontFamily:"monospace"}},
+      tab === "game" && React.createElement('div', {},
+        React.createElement('div', {style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1px 12px"}},
+          ...Object.entries({Wagered:fv(st.total_wagered,creditOn),Returned:fv(st.total_won,creditOn),Net:fv(st.total_won-st.total_wagered,false),Voyages:st.spin_count,"LDW rate":(st.spin_count>0?(st.dp.ldw_count/st.spin_count*100).toFixed(1):0)+"%","True win":(st.spin_count>0?(st.dp.true_wins/st.spin_count*100).toFixed(1):0)+"%",Expeditions:st.bonus_trips,"Bonus spins":st.bonus_spins_total}).flatMap(([k,v]) => [
+            React.createElement('span', {key:k+"l",style:{color:"#556"}}, k+":"),
+            React.createElement('span', {key:k+"v",style:{color:k==="Net"?(st.total_won-st.total_wagered>=0?C.win:C.lose):k.includes("LDW")?"#e8a87c":k.includes("True")?C.win:C.cream}}, v)
+          ])
+        )
+      ),
+      tab === "bonus" && React.createElement('div', {},
+        React.createElement('div', {style:{color:C.gold,fontWeight:"bold",marginBottom:4,fontFamily:"Georgia,serif",fontStyle:"italic"}}, "✈️ The Route of Phileas Fogg"),
+        React.createElement('div', {style:{fontSize:"0.47rem",color:"#778",marginBottom:8}}, "3+ ✈️ symbols → bonus. Travel the world. COLLECT or GAMBLE at each stop. Odds decrease. Lose = lose ALL."),
+        ...(st.route || []).map((s, i) => React.createElement('div', {key:i,style:{display:"flex",justifyContent:"space-between",padding:"2px 0",borderBottom:`1px solid ${C.brass}08`}},
+          React.createElement('span', {}, `${s.emoji} ${s.city}`),
+          React.createElement('span', {style:{color:C.win}}, `+${s.spins}`),
+          React.createElement('span', {style:{color:s.chance<0.4?C.lose:s.chance<0.6?"#e8a87c":C.win}}, i===0||i===(st.route||[]).length-1?"AUTO":`${Math.round(s.chance*100)}%`)
+        ))
+      ),
+      tab === "dark" && React.createElement('div', {},
+        React.createElement('div', {style:{color:C.lose,fontWeight:"bold",marginBottom:6}}, `🧠 Mechanisms (${dpCount}/8)`),
+        React.createElement('div', {style:{display:"flex",gap:3,marginBottom:8}},
+          React.createElement('button', {onClick:()=>{setLdwOn(true);setCelebOn(true);setCreditOn(true);setHideTime(true);setHideCost(true);setJpOn(true);setFallacyOn(true);setSoundOn(true);Tone.start().then(()=>initAudio());},style:{flex:1,padding:4,borderRadius:4,background:`${C.lose}08`,border:`1px solid ${C.lose}25`,color:C.lose,fontSize:"0.45rem",fontWeight:"bold"}}, "🎰 CASINO"),
+          React.createElement('button', {onClick:()=>{setLdwOn(false);setCelebOn(false);setCreditOn(false);setHideTime(false);setHideCost(false);setJpOn(false);setFallacyOn(false);setSoundOn(false);},style:{flex:1,padding:4,borderRadius:4,background:`${C.win}08`,border:`1px solid ${C.win}20`,color:C.win,fontSize:"0.45rem",fontWeight:"bold"}}, "✅ HONEST")
+        ),
+        ...[{on:ldwOn,set:setLdwOn,label:"Loss Disguised as Win",stat:`${st.dp.ldw_count} LDWs`},{on:celebOn,set:setCelebOn,label:"Celebration Asymmetry",stat:`${st.dp.celeb_fake} fake / ${st.dp.celeb_real} real`},{on:creditOn,set:setCreditOn,label:"Credit Obfuscation",stat:creditOn?"Credits":"Currency"},{on:hideTime,set:setHideTime,label:"Time Dissolution",stat:fmtT(elapsed)},{on:hideCost,set:setHideCost,label:"Wager Hiding",stat:`True: ${fv(st.bet,false)}/spin`},{on:soundOn,set:(v)=>{setSoundOn(v);if(v)Tone.start().then(()=>initAudio());},label:"Asymmetric Sound",stat:"Win=music, Loss=silence"},{on:jpOn,set:setJpOn,label:"Progressive Jackpot",stat:`Pool: ${fv(st.jackpot_pool,false)}`},{on:fallacyOn,set:setFallacyOn,label:"Gambler's Fallacy",stat:"Fake indicators"}].map((dp,i) =>
+          React.createElement('div', {key:i,style:{display:"flex",alignItems:"center",gap:6,padding:"3px 6px",borderRadius:4,marginBottom:3,border:`1px solid ${C.brass}${dp.on?"20":"08"}`}},
+            React.createElement('button', {onClick:()=>dp.set(!dp.on),style:{width:28,height:14,borderRadius:7,border:"none",background:dp.on?C.brass:`${C.brass}20`,position:"relative",flexShrink:0}},
+              React.createElement('div', {style:{width:10,height:10,borderRadius:"50%",background:C.cream,position:"absolute",top:2,left:dp.on?16:2,transition:"left 0.2s"}})
+            ),
+            React.createElement('div', {style:{flex:1}},
+              React.createElement('div', {style:{fontWeight:"bold",color:dp.on?C.brass:"#445",fontSize:"0.48rem"}}, dp.label),
+              React.createElement('div', {style:{fontSize:"0.4rem",color:"#445"}}, dp.stat)
+            )
+          )
+        )
+      ),
+      tab === "engine" && corr && React.createElement('div', {},
+        React.createElement('div', {style:{color:C.brass,fontWeight:"bold",marginBottom:4}}, "⚙️ RTP Correction Engine"),
+        React.createElement('div', {style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1px 12px"}},
+          React.createElement('span', {style:{color:"#556"}}, "Config:"), React.createElement('span', {style:{color:corr.config==="loose"?C.win:corr.config==="tight"?C.lose:C.brass,fontWeight:"bold"}}, corr.config.toUpperCase()),
+          React.createElement('span', {style:{color:"#556"}}, "Correction:"), React.createElement('span', {}, corr.correction.toFixed(4)),
+          React.createElement('span', {style:{color:"#556"}}, "Weighted RTP:"), React.createElement('span', {}, (corr.weighted_rtp*100).toFixed(3)+"%")
+        ),
+        corr.reasons.map((r,i) => React.createElement('div', {key:i,style:{color:"#6699aa",paddingLeft:6,fontSize:"0.45rem"}}, `▸ ${r}`))
+      )
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+</body>
+</html>

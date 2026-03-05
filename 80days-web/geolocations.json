@@ -1,0 +1,38 @@
+{
+  "bonus_promotions": [
+    { "id": "POI_001", "name": "Eiffel Tower, Paris", "lat": 48.8584, "lon": 2.2945, "grid_fill": "FULL_4x5", "weight": 1, "emoji": "🗼" },
+    { "id": "POI_002", "name": "Great Pyramid of Giza", "lat": 29.9792, "lon": 31.1342, "grid_fill": "FULL_4x5", "weight": 1, "emoji": "🐪" },
+    { "id": "POI_003", "name": "Statue of Liberty, NY", "lat": 40.6892, "lon": -74.0445, "grid_fill": "FULL_4x5", "weight": 1, "emoji": "🗽" },
+    { "id": "POI_004", "name": "Taj Mahal, Agra", "lat": 27.1751, "lon": 78.0421, "grid_fill": "FULL_4x5", "weight": 1, "emoji": "🕌" },
+    { "id": "POI_005", "name": "Sydney Opera House", "lat": -33.8568, "lon": 151.2153, "grid_fill": "FULL_4x5", "weight": 1, "emoji": "🏛️" },
+    { "id": "POI_006", "name": "Colosseum, Rome", "lat": 41.8902, "lon": 12.4922, "grid_fill": "FULL_4x5", "weight": 1, "emoji": "🏟️" },
+    { "id": "POI_007", "name": "Machu Picchu, Peru", "lat": -13.1631, "lon": -72.5450, "grid_fill": "FULL_4x5", "weight": 1, "emoji": "⛰️" },
+    { "id": "POI_008", "name": "Christ the Redeemer", "lat": -22.9519, "lon": -43.2105, "grid_fill": "FULL_4x5", "weight": 1, "emoji": "⛪" },
+    { "id": "POI_009", "name": "Great Wall of China", "lat": 40.4319, "lon": 116.5704, "grid_fill": "FULL_4x5", "weight": 1, "emoji": "🧱" },
+    { "id": "POI_010", "name": "Petra, Jordan", "lat": 30.3285, "lon": 35.4444, "grid_fill": "FULL_4x5", "weight": 1, "emoji": "🏺" },
+    { "id": "POI_011", "name": "Chichén Itzá, Mexico", "lat": 20.6843, "lon": -88.5678, "grid_fill": "FULL_4x5", "weight": 1, "emoji": "🛕" },
+    { "id": "POI_012", "name": "Stonehenge, UK", "lat": 51.1789, "lon": -1.8262, "grid_fill": "FULL_4x5", "weight": 1, "emoji": "🪨" },
+    { "id": "POI_013", "name": "Mount Fuji, Japan", "lat": 35.3606, "lon": 138.7274, "grid_fill": "FULL_4x5", "weight": 1, "emoji": "🗻" },
+    { "id": "POI_014", "name": "Grand Canyon, USA", "lat": 36.1070, "lon": -112.1130, "grid_fill": "FULL_4x5", "weight": 1, "emoji": "🏜️" },
+    { "id": "POI_015", "name": "Victoria Falls", "lat": -17.9243, "lon": 25.8572, "grid_fill": "FULL_4x5", "weight": 1, "emoji": "🌊" },
+    { "id": "POI_016", "name": "Mount Everest", "lat": 27.9881, "lon": 86.9250, "grid_fill": "FULL_4x5", "weight": 1, "emoji": "🏔️" },
+    { "id": "POI_017", "name": "Burj Khalifa, Dubai", "lat": 25.1972, "lon": 55.2744, "grid_fill": "FULL_4x5", "weight": 1, "emoji": "🏙️" },
+    { "id": "POI_018", "name": "Golden Gate Bridge", "lat": 37.8199, "lon": -122.4783, "grid_fill": "FULL_4x5", "weight": 1, "emoji": "🌉" },
+    { "id": "POI_019", "name": "Acropolis of Athens", "lat": 37.9715, "lon": 23.7257, "grid_fill": "FULL_4x5", "weight": 1, "emoji": "🏛️" },
+    { "id": "POI_020", "name": "Angkor Wat, Cambodia", "lat": 13.4125, "lon": 103.8670, "grid_fill": "FULL_4x5", "weight": 1, "emoji": "🛕" }
+  ],
+  "uncharted_sectors": [
+    { "id": "DEAD_001", "name": "Point Nemo (Oceanic Pole)", "lat": -48.8767, "lon": -123.3933, "weight": 100, "emoji": "🌊" },
+    { "id": "DEAD_002", "name": "Deep Sahara Center", "lat": 23.4162, "lon": 25.6628, "weight": 100, "emoji": "🏜️" },
+    { "id": "DEAD_003", "name": "Antarctic Ice Plateau", "lat": -80.0000, "lon": 75.0000, "weight": 100, "emoji": "❄️" },
+    { "id": "DEAD_004", "name": "Empty Quarter (Rub' al Khali)", "lat": 20.0000, "lon": 50.0000, "weight": 100, "emoji": "🐪" },
+    { "id": "DEAD_005", "name": "Mid-Atlantic Ridge", "lat": 0.0000, "lon": -30.0000, "weight": 100, "emoji": "🌊" },
+    { "id": "DEAD_006", "name": "Mariana Trench Surface", "lat": 11.3493, "lon": 142.1996, "weight": 100, "emoji": "🌊" },
+    { "id": "DEAD_007", "name": "Siberian Tundra", "lat": 72.0000, "lon": 100.0000, "weight": 100, "emoji": "🌲" },
+    { "id": "DEAD_008", "name": "Pacific Inaccessibility", "lat": -20.0000, "lon": -120.0000, "weight": 100, "emoji": "🌊" },
+    { "id": "DEAD_009", "name": "Greenland Ice Sheet", "lat": 72.5760, "lon": -40.2314, "weight": 100, "emoji": "🧊" },
+    { "id": "DEAD_010", "name": "Gobi Desert Core", "lat": 42.5900, "lon": 103.4300, "weight": 100, "emoji": "🏜️" },
+    { "id": "DEAD_011", "name": "Southern Ocean Abyss", "lat": -60.0000, "lon": 0.0000, "weight": 100, "emoji": "🌊" },
+    { "id": "DEAD_012", "name": "Amazonian Deep Canopy", "lat": -3.4653, "lon": -62.2159, "weight": 100, "emoji": "🌳" }
+  ]
+}

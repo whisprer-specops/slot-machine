@@ -1,0 +1,36 @@
+[package]
+name = "atwi80d"
+version = "2.0.0"
+edition = "2021"
+authors = ["whisprer"]
+description = """
+AROUND THE WORLD IN 80 DAYS — Geospatial slot engine.
+Axum web server serving both API and frontend.
+Single binary, single port deployment.
+"""
+
+[dependencies]
+# Async runtime — Axum requires tokio
+tokio = { version = "1", features = ["full"] }
+
+# HTTP framework — lightweight, fast, tower-based
+axum = { version = "0.7", features = ["json"] }
+
+# Static file serving + CORS
+tower-http = { version = "0.5", features = ["fs", "cors"] }
+tower = "0.4"
+
+# Serialization — every API response is JSON
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# RNG — the core of every spin
+rand = "0.8.5"
+
+# Session IDs
+uuid = { version = "1", features = ["v4"] }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+panic = "abort"
