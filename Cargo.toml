@@ -1,0 +1,27 @@
+[package]
+name = "atwi80d"
+version = "1.0.0"
+edition = "2021"
+authors = ["whisprer"]
+description = """
+AROUND THE WORLD IN 80 DAYS — A fully-featured geospatial slot machine engine in Rust.
+Ports the Fortune Engine v5.2 JSX simulator to a terminal-based Rust implementation
+with 4×5 reels, Haversine-based coordinate bonus triggers, sigmoid RTP correction,
+Around the World ladder gamble, and full dark pattern tracking.
+"""
+
+[dependencies]
+# Serde for deserializing the geolocations.json POI dataset
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# The RNG backbone — every spin, every reel stop, every gamble roll
+rand = "0.8.5"
+
+[profile.release]
+# Maximum optimisation for the Haversine + RTP correction hot loops
+opt-level = 3
+# Thin LTO: 90% of fat LTO benefit, 3x faster compile for iteration
+lto = "thin"
+# Abort on panic — no unwinding overhead in tight spin loops
+panic = "abort"
